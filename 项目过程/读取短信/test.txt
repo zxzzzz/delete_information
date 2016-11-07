@@ -1,0 +1,198 @@
+﻿ class MainActivity extends Activity {
+        private ListView showNote;
+        private Uri SMS_INBOX = Uri.parse("content://sms");
+        private SmsObserver smsObserver;
+        private Button deleteButton;
+        private SmsAdapter adapter;
+        private final static String SMS_MESSAGE="newSmsInfo";
+    //    private List<SmsInfo> newSmsInfo=new ArrayList<SmsInfo>();
+//        public ArrayList<String> note;
+    protected void onCreate(Bundle savedInstanceState) {
+
+        super.onCreate(savedInstanceState);
+//            setTitle(R.string.title);//
+        setContentView(R.layout.app_login);
+        showNote=(ListView)findViewById(R.id.showList);
+        smsInfos=getSmsFromPhone();
+        //检测返回的列表长度是否一致
+        //  final int count=smsInfos.size();
+        smsObserver = new SmsObserver(this, smsHandler);
+        getContentResolver().registerContentObserver(SMS_INBOX, true, smsObserver);
+
+        adapter=new SmsAdapter(this);
+        showNote.setAdapter(adapter);
+        deleteButton=(Button)findViewById(R.id.delete);
+        deleteButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                //返回列表长度
+                int position=smsInfos.size();
+                int count=position;
+                //从零计数
+                position=position-1;
+                while (position>=0) {
+                    String id = smsInfos.get(position).getId();
+                    //通过协议读取mmssms.db ，不能直接读取
+                    Uri deleteUri =   Uri.parse("content://sms");
+                    getContentResolver().delete(deleteUri, "sms._id=?", new String[]{id});
+                    smsInfos.remove(position);
+                    position = position - 1;
+                }
+//                SmsAdapter adapter=new SmsAdapter(MainActivity.this);
+//                //刷新列表
+//
+//                showNote.setAdapter(adapter);
+                //通知数据改变
+               // adapter.notifyDataSetChanged();
+                adapter.notifyDataSetChanged();
+                Toast.makeText(MainActivity.this,"删除了"+count+"条信息！",Toast.LENGTH_SHORT).show();
+            }
+
+        });
+
+    }
+        private List<SmsInfo> smsInfos=new ArrayList<SmsInfo>();
+    //读取短信数据库mmssms.db 的基本表sms 并返回查找的字段
+        public List<SmsInfo> getSmsFromPhone() {
+            ContentResolver cr = getContentResolver();
+            List<SmsInfo> smsInfoList=new ArrayList<SmsInfo>();
+            //查询字段
+            String []projection=new String []{"address","person","body","_id"};
+            Cursor cur = cr.query(SMS_INBOX, projection, null, null, "date desc");
+            if (cur!=null){
+            while (cur.moveToNext()) {
+                String number = cur.getString(cur.getColumnIndex("address"));//手机号
+                String name = cur.getString(cur.getColumnIndex("person"));//联系人姓名列表
+                String body = cur.getString(cur.getColumnIndex("body"));//信息
+                String id=cur.getString(cur.getColumnIndex("_id"));
+                // 过滤条件为密码或验证码
+                Pattern pattern=Pattern.compile(".*(验证码|密码).*");
+                Matcher matcher=pattern.matcher(body);
+                if (matcher.matches()){
+                    SmsInfo smsInfo = new SmsInfo();
+                    smsInfo.setName(name);
+                    smsInfo.setAddress(number);
+                    smsInfo.setText(body);
+                    smsInfo.setId(id);
+                    smsInfoList.add(smsInfo);
+                }
+
+
+            }
+                cur.close();
+            }
+//                }
+            return smsInfoList;
+        }
+
+
+
+
+
+
+
+
+
+
+
+
+
+    Handler smsHandler=new Handler();
+ //   {
+//        @Override
+//        public void handleMessage(Message msg) {
+//            super.handleMessage(msg);
+//            if (msg.what==1){
+//                SmsAdapter smsAdapter=new SmsAdapter(MainActivity.this);
+//                showNote.setAdapter(smsAdapter);
+//                smsAdapter.notifyDataSetChanged();
+//
+//
+//            }
+//        }
+//    };
+    public  class SmsObserver extends ContentObserver {
+        private Context context;
+        private Handler handler;
+   //     private final static int SMS_MESSAGE=1;
+
+        public SmsObserver(Context context, android.os.Handler handler) {
+            super(handler);
+            this.context=context;
+            this.handler=handler;
+        }
+
+        @Override
+        public void onChange(boolean selfChange) {
+            super.onChange(selfChange);
+            //每当有新短信到来时，使用我们获取短消息的方法
+            smsInfos=getSmsFromPhone();
+            adapter.notifyDataSetChanged();
+            //如何判断是否private message?
+            Toast.makeText(MainActivity.this,"There have a new message!",Toast.LENGTH_SHORT).show();
+           // Message message=new Message();
+           // message.what=1;
+          //  message.obj=newSmsInfo;
+         //   handler.sendMessage(message);
+            Log.i(SMS_MESSAGE,"correct");
+
+        }
+    }
+    class SmsAdapter extends BaseAdapter{
+//        private View mView;/
+
+        private LayoutInflater layoutInflater=getLayoutInflater();
+        public SmsAdapter(Context context){
+            layoutInflater=LayoutInflater.from(context);
+        }
+
+
+        @Override
+        public int getCount() {
+            return smsInfos.size();
+        }
+
+        @Override
+        public Object getItem(int position) {
+            return smsInfos.get(position);
+        }
+
+        @Override
+        public long getItemId(int position) {
+            return 0;
+        }
+
+        @Override
+        public View getView(int position, View convertView, ViewGroup parent) {
+            //
+            ViewHolder viewHolder;
+            if (convertView==null){
+                convertView=layoutInflater.inflate(R.layout.item,null);
+                viewHolder=new ViewHolder();
+                viewHolder.name=(TextView)convertView.findViewById(R.id.name);
+                viewHolder.address=(TextView)convertView.findViewById(R.id.address);
+                viewHolder.text=(TextView)convertView.findViewById(R.id.text);
+                viewHolder.id=(TextView)convertView.findViewById(R.id.id);
+
+                convertView.setTag(viewHolder);
+
+            }viewHolder=(ViewHolder)convertView.getTag();
+
+            viewHolder.name.setText(smsInfos.get(position).getName());
+            viewHolder.address.setText(smsInfos.get(position).getAddress());
+            viewHolder.text.setText(smsInfos.get(position).getText());
+            viewHolder.id.setText(smsInfos.get(position).getId());
+            return convertView;
+        }
+       public final class ViewHolder{
+         public    TextView name;
+           public TextView address;
+            public  TextView text;
+           public TextView id;
+
+
+        }
+    }
+
+
+}

@@ -1,0 +1,6 @@
+对象数组保存的是引用，基本数据类型数组保存的是数值。在引用未被初始化前，不能利用引用做任何操作。
+equal()比较的也是引用，但一般重载用来比较内容。==和!=比较的是引用。比较基本数据类型使用==和!=,比较两个对象是否相同使用equal(),因为没有两个对象的地址是相同的。
+java没有sizeOf()，因为其可移植性，所有数据类型在所有的机器中都是相同的。JVM吧。
+xml和sql语句的命名规则是不相同的，数据库字段名不允许使用-,0-9,:等。like '%your input%'
+android数据库操作：
+	SqliteOpenHelper 是抽象类，必须implement并且重写方法onCreate(),onUpdate()等，在其初始化时调用onCreate(),隐含了一个SqliteDatabase对象。 SqliteOpenhelper.getWriteable()和.getReadable()方法分别得到可读写和只读的SqliteDatabase对象。SqliteDatabase.rawQuery(String)执行查询操作，SqliteDatabase.exc.()执行Sql操作。

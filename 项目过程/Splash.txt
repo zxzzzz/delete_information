@@ -1,0 +1,37 @@
+程序启动太慢，考虑在启动时开个线程加载Splash页面，延迟2000ms在载入主activity。
+利用到ViewSwitch组件，有两个字view，不过一次只能显示一个。调用Handler.sendEmptyMessageDelayed(int what,long delay)通知另一个线程，在handleMessage(Message msg)中处理。
+Handler:在新启动的线程里发送消息;在主线程中获取处理消息。
+	当新启动的线程发送消息时，Handle类中的处理消息的方法自动被回调。
+Android平台不允许Activity 新启动的线程访问该Activity里的组件，导致新启动的组件无法更改Activity组件的属性值。
+ 
+android.os.Handler myHandler=new android.os.Handler(){
+        @Override
+        public void handleMessage(Message msg) {
+            switch (msg.what){
+                case SPLASH_ONE:
+//在2000ms后，将ImageView移除
+                    ViewSwitcher switcher=(ViewSwitcher)findViewById(R.id.viewSwitch);
+                    //    ImageView imageView=(ImageView)switcher.getChildAt(0);
+                    //     imageView.setImageResource(0);
+                    switcher.removeViewAt(0);
+                    break;
+                default:
+                    break;
+            }
+        }
+    };
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        //隐藏标题栏
+        requestWindowFeature(Window.FEATURE_NO_TITLE);
+        //设置全屏模式
+        int flag= WindowManager.LayoutParams.FLAG_FULLSCREEN;
+        Window window= MainActivity.this.getWindow();
+        window.setFlags(flag,flag);
+        setContentView(R.layout.activity_main);
+        //Message message=new Message();
+        //message.what=SPLASH_ONE;
+        myHandler.sendEmptyMessageDelayed(SPLASH_ONE,2000);
+        .....

@@ -1,0 +1,31 @@
+清理隐私信息，就要先搞清楚哪些可以当作隐私信息，位置在哪，需要取得什么权限才可以读写删除这些信息。权限在root那一篇介绍。
+下面是android文件系统目录：
+system:系统目录，放置在android运行所需的核心类库
+data:应用目录，放置运行在android上的应用及其数据
+sdcard：扩展存储卡目录，用来存放共享的数据
+mnt：记录android挂载的外部存储信息
+这样看来，只有在data目录下才有应用程序产生的数据，看一下data目录
+/data/app:应用安装包
+/data/data:存放运行数据
+这样就可以定位隐私数据绘存放在/data/data目录下
+1./data/data/ package_name /cache（应用缓存）
+2./mnt/sdcard/Android/ package_name /cache（外部应用缓存，FROYO以后支持）
+3./data/data/package_name/database/webview.db*（WebView缓存）
+4./data/data/package_name/database/webviewCache.db*（WebView缓存）
+5.其他一些/data/data/ package_name /*cache目录（应用缓存）
+6./data/data/package_name/files（比较严格的清理策略时也可以选择清理）
+
+均用到反射这方面的知识，Android系统API把这些方法隐藏了。需要root权限：
+Class c1 = Class.forName("android.content.pm.IPackageDataObserver");
+Method method = pm.getClass().getMethod("deleteApplicationCacheFiles", String.class,IPackageDataObserver.class);
+method.invoke(pm, packageName,new IPackageDataObserver.Stub(){
+@Override
+public void onRemoveCompleted(String packageName,
+boolean succeeded) throws RemoteException {
+// TODO Auto-generated method stub
+}
+});
+<uses-permission android:name="android.permission.DELETE_CACHE_FILES" />
+
+
+不需要root权限，一键清理;

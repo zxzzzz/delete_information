@@ -1,0 +1,345 @@
+需要调用getPackageSizeInfo来计算缓存大小，但PackageManager中这个方法是隐藏的，可能开发人员觉得不安全不暴露接口？用到反射的概念
+Method method=MainActivity.this.getPackageManager().getClass().getMethod(..)
+然后调用getPackageSizeInfo 方法
+method.invoke(PackageManager(方法所在的类),String.class,IPackageStatsObserver.class(方法参数，本来以为第二个参数是自定义的，只要是实现了AIDL 接口并且继承了Binder的类就可以，然后看了getPackageSizeInfo的源码发现IPackageStatsObserver类是确定的并且有回调方法onGetStatsCompleted()但是这个方法是自定义的，所以这个IPackageStatsObserver类是什么？为啥还需要AIDL，直接继承Interface不久可以了吗？而且要将IPackageStatsObserver.aidl文件放在android.content.pm包下，aidl文件C/s端的aidl文件要有相同的包名（文件不一致会出现问题），难道是远程调用？那c/s端分别是什么？))
+
+public void getPackageSizeInfo(final String packageName,
+
+            final IPackageStatsObserverobserver) {
+
+       mContext.enforceCallingOrSelfPermission(
+
+                android.Manifest.permission.GET_PACKAGE_SIZE, null);
+
+       // Queue up an async operation since the package deletion may take alittle while.
+
+       mHandler.post(new Runnable() {
+
+            public void run() {
+
+                mHandler.removeCallbacks(this);
+//获取应用包信息
+
+                PackageStats lStats = new PackageStats(packageName);
+
+                final boolean succeded;
+
+                synchronized (mInstallLock) {
+
+                    succeded = getPackageSizeInfoLI(packageName,lStats);
+
+                }
+
+                if(observer != null) {
+
+                    try {
+//回调IPackageStatsObserver的方法
+
+                        observer.onGetStatsCompleted(lStats, succeded);
+
+                    } catch (RemoteException e){
+
+                        Log.i(TAG,"Observer no longer exists.");
+
+                    }
+
+                } //end if observer
+
+            } //end run
+
+       });
+
+    }
+
+ 
+
+1）。需要注意，permission.GET_PACKAGE_SIZE权限。
+
+2）。PackageStats lStats将会存放着得到的数据，
+
+3）。getPackageSizeInfoLI是主要的函数。
+
+4) 。onGetStatsCompleted, 我们需要实现的回调函数，这在上一篇文章中已经有体现。
+
+ 
+
+那么，在getPackageSizeInfoLI中,有：
+
+ 
+
+int res = mInstaller.getSizeInfo(packageName,p.mPath,
+
+                    publicSrcDir, pStats);
+
+ 
+
+而mInstaller是Installer类型的一个实例，事实上，它是与android中的守护进程installd进行通信的，通过socket.
+
+ 
+
+3.   Installer的定义如下：
+
+ 
+
+class Installer {
+
+    private static final String TAG ="Installer";
+
+  InputStream mIn;
+
+  OutputStream mOut;
+
+  LocalSocket mSocket;
+
+ 
+
+  byte buf[] = new byte[1024];
+
+  int buflen = 0;
+
+ 
+
+    private boolean connect() {
+
+        if (mSocket != null) {
+
+            return true;
+
+        }
+
+        Log.i(TAG, "connecting...");
+
+        try {
+
+            mSocket = new LocalSocket();
+
+ 
+
+            LocalSocketAddress address = newLocalSocketAddress(
+
+                "installd", LocalSocketAddress.Namespace.RESERVED);
+
+ 
+
+            mSocket.connect(address);
+
+ 
+
+            mIn = mSocket.getInputStream();
+
+            mOut = mSocket.getOutputStream();
+
+        } catch (IOException ex) {
+
+            disconnect();
+
+            return false;
+
+        }
+
+        return true;
+
+    }
+
+ 
+
+  private void disconnect(){
+
+       Log.i(TAG,"disconnecting...");
+
+         try {
+
+                if (mSocket != null) mSocket.close();
+
+         } catch (IOException ex) { }
+
+         try {
+
+                if (mIn != null) mIn.close();
+
+         } catch (IOException ex) { }
+
+         try {
+
+                if (mOut != null) mOut.close();
+
+         } catch (IOException ex) { }
+
+         mSocket = null;
+
+         mIn = null;
+
+         mOut = null;
+
+  }
+
+ 
+
+private boolean readBytes(byte buffer[], int len)
+
+private boolean writeCommand(String _cmd)
+
+private synchronizedString transaction(String cmd)
+
+private int execute(String cmd) {
+
+         String res = transaction(cmd);
+
+         try {
+
+                return Integer.parseInt(res);
+
+         } catch (NumberFormatException ex) {
+
+                return -1;
+
+         }
+
+  }
+
+ 
+
+    public int install(String name, int uid, int gid) {
+
+        StringBuilder builder = newStringBuilder("install");
+
+        builder.append(' ');
+
+        builder.append(name);
+
+        builder.append(' ');
+
+        builder.append(uid);
+
+        builder.append(' ');
+
+        builder.append(gid);
+
+        return execute(builder.toString());
+
+    }
+
+ 
+
+public int freeCache(long freeStorageSize) {
+
+        StringBuilder builder = newStringBuilder("freecache");
+
+        builder.append(' ');
+
+       builder.append(String.valueOf(freeStorageSize));
+
+        return execute(builder.toString());
+
+    }
+
+ 
+
+public int getSizeInfo(String pkgName, String apkPath,
+
+            String fwdLockApkPath, PackageStatspStats) {
+
+        StringBuilder builder = newStringBuilder("getsize");
+
+        builder.append(' ');
+
+        builder.append(pkgName);
+
+        builder.append(' ');
+
+        builder.append(apkPath);
+
+        builder.append(' ');
+
+        builder.append(fwdLockApkPath != null ?fwdLockApkPath : "!");
+
+ 
+
+        String s =transaction(builder.toString());
+
+        String res[] = s.split(" ");
+
+ 
+
+        if((res == null) || (res.length != 4)){
+
+            return -1;
+
+        }
+
+        try {
+
+            pStats.codeSize =Long.parseLong(res[1]);
+
+            pStats.dataSize =Long.parseLong(res[2]);
+
+            pStats.cacheSize =Long.parseLong(res[3]);
+
+            return Integer.parseInt(res[0]);
+
+        } catch (NumberFormatException e) {
+
+            return -1;
+
+        }
+
+    }   
+
+分析：
+
+1） 在connect函数中，与它进行socket连接的是installd。Installd是android中的守护进程，用ps可以看到它，它的父进程是init,关于Android启动流程的更加详细的说明，请看下面这篇文章：
+
+http://blog.csdn.net/liranke/article/details/4694989。
+
+
+2） 有一些read,write函数，当然是用于对socket读取写数据；
+
+3) install, freeCache, getSizeInfo只是将固定字符串的命令传入到execute函数中；
+
+4） execute的实现，只是将命令字符串通过transaction传下去，而在中会调用writeCommand，去真正地将命令写入到与之连接好的守护进程Installd。
+
+
+这下，好象理清一些了:
+
+PackageManager------aidl------- > PackageManagerService的Installer ----socket--------> Installd（c程序）。
+
+ 
+
+4. Installd：这是一个用c写成的带有main函数的守护进程，在开机之后由init.rc调用，代码位于：framworks/base/cmds/installd目录下。其中，最后一个字母d,代码的就是“dameon”，事实上，在android中，定义了好多这样的守护进程，正是由于它们的存在，android系统才能够正常运转起来，也正是由于整个系统中，像这种实现方式是android中到处可以看见的。关于Installd，给出一些可以想像得到的有趣的代码片段，有兴趣的读者，可以自己去看源码。
+
+Installd.c:
+
+ 
+
+struct cmdinfo cmds[] ={
+
+    { "ping",                 0, do_ping },
+
+    { "install",             3, do_install },
+
+    { "dexopt",               3, do_dexopt },
+
+    { "movedex",              2, do_move_dex },
+
+    { "rmdex",                1, do_rm_dex },
+
+    { "remove",               1, do_remove },
+
+    { "freecache",           1, do_free_cache },
+
+    { "rmcache",              1, do_rm_cache },
+
+    { "protect",              2, do_protect },
+
+    { "getsize",             3, do_get_size },
+
+    { "rmuserdata",           1, do_rm_user_data },
+
+};
+
+ 
+
+哦，这不就是从PackageManagerService的Installer 传递过来的命令字符串么，那么，还能想到什么呢？
+
+
+

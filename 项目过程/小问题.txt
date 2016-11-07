@@ -1,0 +1,56 @@
+一.更改应用程序图标：
+<application
+	android:ico=""
+二.设置应用程序为全屏显示：
+int flag= WindowManager.LayoutParams.FLAG_FULLSCREEN;
+        Window window= MainActivity.this.getWindow();
+        window.setFlags(flag,flag);
+三.隐藏标题栏
+1.requestWindowFeature(Window.FEATURE_NO_TITLE);
+2.<activity 
+	activity:them:"..NO_TITLE"
+四.category:
+CATEGORY_DEAULT:设置Activity以默认方式启动
+CATEGORY_LAUNCHER:设置Activity为启动Activity，一般与.MainActivity配合使用
+五.AIDL文件编译错误
+	如果文件本身无错误，只需clean project--make moudle
+
+六.equlas()与==的区别
+==与！=比较对象的引用，适用于基本数据类型。
+equals()的默认行为是比较引用。所以要在自己的新类中覆盖equals()方法，来比较两个对象的实际内容是否相同。大多数java类库都实现了eqquals()方法，用来比较对象的内容，而非对象的引用。
+七.数组/集合的初始化
+数据标识符只是一个引用，指向在堆中创建的一个真实对象，这个对象用以保存指向其他对象的引用。对象数组保存的是引用，基本类型数组保存基本类型的值。
+Dog[] dogA=new Dog[4]//所有的引用被初始化为null，检查其中的引用是否为Null，就可以知道某个对象是否存在，只可以得知数组的大小
+Dog[] dogB={new Dog(),ew Dog()};//正确被初始化
+A=B;//将指向某个数组对象的引用赋给另一个数组对象
+八.基本成员默认值
+当变量作为类的成员使用时，java才确保给其默认值，以确保那些是基本类型的成员变量得到初始化。但是不适用于局部变量，可能被初始化为任意值        
+九.Reader/InputStream  Writer/OutputStream
+InputStream和OutputStream是面向字节的，Writer和Reader是面向字符的，兼容Unicode，为了国际化
+把字节和字符结合起来使用，要用到Adapter：InputStreamReader可以把InputStream转换为Reader，OutputStreamWriter可以把OutputStream转换为Writer
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

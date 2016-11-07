@@ -1,0 +1,8 @@
+init是android系统启动时启动的第一个进程，负责创建系统中的关键几个进程。
+int.c解析配置文件init.rc，启动Service,此时全都是root权限,启动adb，如果实在终端shell里执行的话，adb.c有一段代码:setUid(shell),将root权限设置为shell权限。adb的启动个数是有限额的，超过限额setUid()失效，继续按照root权限执行后面的代码。用户得到了root权限，就可以将破解后的su修改了。之前这是个漏洞，不知道现在补上了没。
+su.c代码：
+int main(int argc, char** argv) {
+    uid_t current_uid = getuid();
+    if (current_uid != AID_ROOT && current_uid != AID_SHELL) error(1, 0, "not allowed");
+只有root用户和shell用户可以～
+学学C吧看不懂。。
