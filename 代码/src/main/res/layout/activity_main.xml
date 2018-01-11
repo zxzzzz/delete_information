@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ViewSwitcher
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent"
+    tools:context="com.example.cache.MainActivity"
+    android:id="@+id/viewSwitch">
+    <ImageView
+        android:layout_width="fill_parent"
+        android:layout_height="fill_parent"
+        android:id="@+id/splashScreen"
+        android:scaleType="fitXY"
+        android:src="@drawable/landscape"/>
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:id="@+id/mainScreen">
+    <Button
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/write"
+        android:text="写入数据" />
+    <Button
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="读入数据"
+        android:id="@+id/read"/>
+    <Button
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/computeSize"
+        android:text="计算缓存" />
+    <Button
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/clearCache"
+        android:text="清理缓存"/>
+    <Button
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/read_prefs"
+        android:text="阅读XML "/>
+        <Button
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="/data/data"
+            android:id="@+id/data_data"/>
+        </LinearLayout>
+
+
+
+</ViewSwitcher>
